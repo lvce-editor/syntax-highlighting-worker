@@ -5,7 +5,6 @@ const tokenizers = Object.create(null)
 
 export const set = (id, value) => {
   tokenizers[id] = value
-  console.log('reset', id)
   TextDocument.resetInvalidStartIndex(id)
 }
 
