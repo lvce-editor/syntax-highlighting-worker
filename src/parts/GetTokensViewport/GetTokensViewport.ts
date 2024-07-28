@@ -70,9 +70,11 @@ export const getTokensViewport = (editor, startLineIndex, endLineIndex, hasLines
   if (hasLinesToSend) {
     TextDocument.setLines(id, linesToSend)
   }
-  const { invalidStartIndex, languageId } = editor
+  const { languageId } = editor
+  TextDocument.setLanguageId(id, languageId)
   const lines = TextDocument.getLines(id)
-  const lineCache: any[] = []
+  const lineCache = TextDocument.getLineCache(id)
+  const invalidStartIndex = TextDocument.getInvalidStartIndex(id)
   const tokenizer = TokenizerMap.get(languageId)
   const { hasArrayReturn, tokenizeLine, initialLineState } = tokenizer
   const tokenizeStartIndex = invalidStartIndex
@@ -95,14 +97,14 @@ export const getTokensViewport = (editor, startLineIndex, endLineIndex, hasLines
   if (linesWithEmbed.length > 0) {
     const { tokenizersToLoad, embeddedResults } = getTokensViewportEmbedded(languageId, lines, lineCache, linesWithEmbed)
     // TODO support lineCache with embedded content
-    editor.invalidStartIndex = 0
+    TextDocument.setInvalidStartIndex(id, 0)
     return {
       tokens: visibleLines,
       tokenizersToLoad,
       embeddedResults,
     }
   }
-  editor.invalidStartIndex = Math.max(invalidStartIndex, tokenizeEndIndex)
+  TextDocument.setInvalidStartIndex(id, Math.max(invalidStartIndex, tokenizeEndIndex))
   return {
     tokens: visibleLines,
     tokenizersToLoad,
