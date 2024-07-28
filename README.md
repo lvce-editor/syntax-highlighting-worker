@@ -1,1 +1,1 @@
-# editor worker
+# syntax highlighting worker
