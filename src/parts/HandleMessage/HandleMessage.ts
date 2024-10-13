@@ -1,5 +1,5 @@
+import * as Command from '@lvce-editor/command'
 import * as Callback from '../Callback/Callback.ts'
-import * as Command from '../Command/Command.ts'
 import * as HandleJsonRpcMessage from '../JsonRpc/JsonRpc.ts'
 
 const requiresSocket = () => {
