@@ -5,4 +5,5 @@ import * as HandleMessagePort from '../HandleMessagePort/HandleMessagePort.ts'
 export const commandMap = {
   ...DefaultCommandMap.commandMap,
   [CommandId.HandleMessagePort]: HandleMessagePort.handleMessagePort,
+  [CommandId.HandleMessagePort2]: HandleMessagePort.handleMessagePort2,
 }
