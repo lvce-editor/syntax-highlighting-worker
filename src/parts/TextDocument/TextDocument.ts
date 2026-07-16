@@ -33,5 +33,9 @@ export const setInvalidStartIndex = (editorId: number, index: number) => {
 }
 
 export const setLanguageId = (editorId: number, languageId: string) => {
+  if (languageIds[editorId] !== undefined && languageIds[editorId] !== languageId) {
+    lineCaches[editorId] = []
+    invalidStartIndices[editorId] = 0
+  }
   languageIds[editorId] = languageId
 }
