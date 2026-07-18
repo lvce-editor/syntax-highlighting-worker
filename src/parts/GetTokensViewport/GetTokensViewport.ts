@@ -5,16 +5,25 @@ import * as TokenizePlainText from '../TokenizePlainText/TokenizePlainText.ts'
 import * as Tokenizer from '../Tokenizer/Tokenizer.ts'
 import * as TokenizerMap from '../TokenizerMap/TokenizerMap.ts'
 
+interface CachedEmbeddedResult {
+  readonly context: any
+  readonly languageId: string
+  readonly response: any
+}
+
+const embeddedResultCache = new WeakMap<object, CachedEmbeddedResult>()
+
 const getTokensViewportEmbedded = (langageId, lines, lineCache, linesWithEmbed) => {
   const tokenizersToLoad: any[] = []
-  const embeddedResults: any[] = []
-  let topContext
   for (const index of linesWithEmbed) {
     const result = lineCache[index + 1]
     const line = lines[index]
     if (result.embeddedLanguage) {
       const { embeddedLanguage, embeddedLanguageStart, embeddedLanguageEnd } = result
       const embeddedTokenizer = Tokenizer.getTokenizer(embeddedLanguage)
+      const previousResult = lineCache[index]
+      const previousEmbeddedResult = previousResult && embeddedResultCache.get(previousResult)
+      const previousContext = previousEmbeddedResult?.languageId === embeddedLanguage ? previousEmbeddedResult.context : undefined
       if (embeddedLanguageStart !== line.length && embeddedTokenizer && embeddedTokenizer !== TokenizePlainText) {
         const isFull = embeddedLanguageStart === 0 && embeddedLanguageEnd === line.length
         const partialLine = line.slice(embeddedLanguageStart, embeddedLanguageEnd)
@@ -22,43 +31,60 @@ const getTokensViewportEmbedded = (langageId, lines, lineCache, linesWithEmbed) 
           langageId,
           embeddedTokenizer.tokenizeLine,
           partialLine,
-          topContext || GetInitialLineState.getInitialLineState(embeddedTokenizer.initialLineState),
+          previousContext || GetInitialLineState.getInitialLineState(embeddedTokenizer.initialLineState),
           embeddedTokenizer.hasArrayReturn,
         )
-        topContext = embedResult
-        result.embeddedResultIndex = embeddedResults.length
-        embeddedResults.push({
-          result: embedResult,
-          TokenMap: embeddedTokenizer.TokenMap,
-          isFull,
+        embeddedResultCache.set(result, {
+          context: embedResult,
+          languageId: embeddedLanguage,
+          response: {
+            result: embedResult,
+            TokenMap: embeddedTokenizer.TokenMap,
+            isFull,
+          },
         })
       } else if (line.length === 0) {
         const embedResult = {
           tokens: [],
         }
-        result.embeddedResultIndex = embeddedResults.length
-        embeddedResults.push({
-          result: embedResult,
-          isFull: true,
-          TokenMap: [],
+        embeddedResultCache.set(result, {
+          context: previousContext,
+          languageId: embeddedLanguage,
+          response: {
+            result: embedResult,
+            isFull: true,
+            TokenMap: [],
+          },
         })
       } else {
         tokenizersToLoad.push(embeddedLanguage)
-        embeddedResults.push({
-          result: {},
-          isFull: false,
-          TokenMap: [],
+        embeddedResultCache.set(result, {
+          context: undefined,
+          languageId: embeddedLanguage,
+          response: {
+            result: {},
+            isFull: false,
+            TokenMap: [],
+          },
         })
-        topContext = undefined
       }
-    } else {
-      topContext = undefined
     }
   }
   return {
     tokenizersToLoad,
-    embeddedResults,
   }
+}
+
+const getVisibleEmbeddedResults = (visibleLines: readonly any[]): readonly any[] => {
+  const embeddedResults: any[] = []
+  for (const result of visibleLines) {
+    const cached = embeddedResultCache.get(result)
+    if (cached) {
+      result.embeddedResultIndex = embeddedResults.length
+      embeddedResults.push(cached.response)
+    }
+  }
+  return embeddedResults
 }
 
 const getTokenizeEndIndex = (invalidStartIndex, endLineIndex, tokenizeStartIndex) => {
@@ -79,8 +105,6 @@ export const getTokensViewport = (editor, startLineIndex, endLineIndex, hasLines
   const { hasArrayReturn, tokenizeLine, initialLineState } = tokenizer
   const tokenizeStartIndex = invalidStartIndex
   const tokenizeEndIndex = getTokenizeEndIndex(invalidStartIndex, endLineIndex, tokenizeStartIndex)
-  const tokenizersToLoad = []
-  const embeddedResults: any[] = []
   const linesWithEmbed: any[] = []
   for (let i = tokenizeStartIndex; i < tokenizeEndIndex; i++) {
     const lineState = i === 0 ? GetInitialLineState.getInitialLineState(initialLineState) : lineCache[i]
@@ -89,22 +113,17 @@ export const getTokensViewport = (editor, startLineIndex, endLineIndex, hasLines
     // TODO if lineCacheEnd matches the one before, skip tokenizing lines after
     lineCache[i + 1] = result
     if (result.embeddedLanguage) {
-      result.embeddedResultIndex = linesWithEmbed.length
       linesWithEmbed.push(i)
     }
   }
   const visibleLines = lineCache.slice(startLineIndex + 1, endLineIndex + 1)
+  let tokenizersToLoad: readonly any[] = []
   if (linesWithEmbed.length > 0) {
-    const { tokenizersToLoad, embeddedResults } = getTokensViewportEmbedded(languageId, lines, lineCache, linesWithEmbed)
-    // TODO support lineCache with embedded content
-    TextDocument.setInvalidStartIndex(id, 0)
-    return {
-      tokens: visibleLines,
-      tokenizersToLoad,
-      embeddedResults,
-    }
+    ;({ tokenizersToLoad } = getTokensViewportEmbedded(languageId, lines, lineCache, linesWithEmbed))
   }
-  TextDocument.setInvalidStartIndex(id, Math.max(invalidStartIndex, tokenizeEndIndex))
+  const embeddedResults = getVisibleEmbeddedResults(visibleLines)
+  const nextInvalidStartIndex = tokenizersToLoad.length > 0 ? tokenizeStartIndex : Math.max(invalidStartIndex, tokenizeEndIndex)
+  TextDocument.setInvalidStartIndex(id, nextInvalidStartIndex)
   return {
     tokens: visibleLines,
     tokenizersToLoad,
