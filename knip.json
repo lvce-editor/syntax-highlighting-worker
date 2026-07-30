@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/syntaxHighlightingWorkerMain.ts",
+    "scripts/build.js",
+    "scripts/computeNodeModulesCacheKey.js",
+    "test/**/*.test.ts"
+  ],
+  "project": ["*.js", "scripts/*.js", "src/**/*.ts", "test/**/*.ts"],
+  "ignore": ["src/parts/TokenizePlainText/TokenizePlainText.ts"]
+}

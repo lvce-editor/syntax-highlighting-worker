@@ -11,7 +11,3 @@ export const set = (id, value) => {
 export const get = (id) => {
   return tokenizers[id] || TokenizePlainText
 }
-
-export const remove = (id) => {
-  delete tokenizers[id]
-}
