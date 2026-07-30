@@ -4,7 +4,7 @@ interface State {
   warned: any[]
 }
 
-export const state: State = {
+const state: State = {
   warned: [],
 }
 
