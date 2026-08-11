@@ -24,7 +24,8 @@ const getTokensViewportEmbedded = (langageId, lines, lineCache, linesWithEmbed) 
       const previousResult = lineCache[index]
       const previousEmbeddedResult = previousResult && embeddedResultCache.get(previousResult)
       const previousContext = previousEmbeddedResult?.languageId === embeddedLanguage ? previousEmbeddedResult.context : undefined
-      if (embeddedLanguageStart !== line.length && embeddedTokenizer && embeddedTokenizer !== TokenizePlainText) {
+      const hasEmbeddedContent = embeddedLanguageEnd > embeddedLanguageStart
+      if (hasEmbeddedContent && embeddedTokenizer && embeddedTokenizer !== TokenizePlainText) {
         const isFull = embeddedLanguageStart === 0 && embeddedLanguageEnd === line.length
         const partialLine = line.slice(embeddedLanguageStart, embeddedLanguageEnd)
         const embedResult = SafeTokenizeLine.safeTokenizeLine(
@@ -43,7 +44,7 @@ const getTokensViewportEmbedded = (langageId, lines, lineCache, linesWithEmbed) 
             isFull,
           },
         })
-      } else if (line.length === 0) {
+      } else if (!hasEmbeddedContent) {
         const embedResult = {
           tokens: [],
         }
