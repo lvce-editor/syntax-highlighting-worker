@@ -54,3 +54,51 @@ test('keeps embedded tokenization cached while scrolling', () => {
   expect(embeddedTokenizeCount).toBe(6)
   expect(TextDocument.getInvalidStartIndex(editorId)).toBe(6)
 })
+
+test('does not invalidate outer tokens for an empty embedded range', () => {
+  const editorId = 2
+  const lines = ['<script>', 'one', 'two', 'three']
+  let outerTokenizeCount = 0
+  let embeddedTokenizeCount = 0
+  TokenizerMap.set('html-test', {
+    hasArrayReturn: true,
+    initialLineState: {
+      state: 0,
+    },
+    tokenizeLine(line: string, lineState: any) {
+      outerTokenizeCount++
+      return {
+        embeddedLanguage: 'javascript-empty-range-test',
+        embeddedLanguageEnd: line === '<script>' ? 0 : line.length,
+        embeddedLanguageStart: line === '<script>' ? line.length : 0,
+        state: lineState.state + 1,
+        tokens: [1, line.length],
+      }
+    },
+  })
+  TokenizerMap.set('javascript-empty-range-test', {
+    hasArrayReturn: true,
+    initialLineState: {
+      state: 0,
+    },
+    TokenMap: {
+      1: 'Identifier',
+    },
+    tokenizeLine(line: string, lineState: any) {
+      embeddedTokenizeCount++
+      return {
+        state: lineState.state + 1,
+        tokens: [1, line.length],
+      }
+    },
+  })
+
+  const first = GetTokensViewport.getTokensViewport({ languageId: 'html-test' }, 0, 3, true, editorId, lines)
+  const second = GetTokensViewport.getTokensViewport({ languageId: 'html-test' }, 1, 4, false, editorId, [])
+
+  expect(first.tokenizersToLoad).toEqual([])
+  expect(second.tokenizersToLoad).toEqual([])
+  expect(outerTokenizeCount).toBe(4)
+  expect(embeddedTokenizeCount).toBe(3)
+  expect(TextDocument.getInvalidStartIndex(editorId)).toBe(4)
+})
