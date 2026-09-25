@@ -6,6 +6,7 @@ import * as TokenizeIncremental from '../TokenizeIncremental/TokenizeIncremental
 import * as Tokenizer from '../Tokenizer/Tokenizer.ts'
 
 export const commandMap = {
+  [CommandId.DisposeTextDocument]: TextDocument.dispose,
   [CommandId.GetTokensViewport]: GetTokensViewport.getTokensViewport,
   [CommandId.LoadTokenizer]: Tokenizer.loadTokenizer,
   [CommandId.SetLines]: TextDocument.setLines,

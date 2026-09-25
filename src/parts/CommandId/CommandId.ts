@@ -1,4 +1,5 @@
 export const GetTokensViewport = 'GetTokensViewport.getTokensViewport'
+export const DisposeTextDocument = 'TextDocument.dispose'
 export const HandleMessagePort = 'HandleMessagePort.handleMessagePort'
 export const HandleMessagePort2 = 'HandleMessagePort.handleMessagePort2'
 export const LoadTokenizer = 'Tokenizer.load'
