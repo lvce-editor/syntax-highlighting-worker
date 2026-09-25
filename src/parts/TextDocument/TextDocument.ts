@@ -3,6 +3,13 @@ const lineCaches = Object.create(null)
 const invalidStartIndices = Object.create(null)
 const languageIds = Object.create(null)
 
+export const dispose = (editorId: number): void => {
+  delete lineMap[editorId]
+  delete lineCaches[editorId]
+  delete invalidStartIndices[editorId]
+  delete languageIds[editorId]
+}
+
 export const setLines = (editorId: number, lines: readonly string[]) => {
   lineMap[editorId] = lines
   lineCaches[editorId] = []
