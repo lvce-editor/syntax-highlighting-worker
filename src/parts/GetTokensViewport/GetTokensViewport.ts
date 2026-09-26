@@ -53,7 +53,7 @@ const getTokensViewportEmbedded = (langageId, lines, lineCache, linesWithEmbed) 
           languageId: embeddedLanguage,
           response: {
             result: embedResult,
-            isFull: true,
+            isFull: false,
             TokenMap: [],
           },
         })

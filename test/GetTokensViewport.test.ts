@@ -102,3 +102,41 @@ test('does not invalidate outer tokens for an empty embedded range', () => {
   expect(embeddedTokenizeCount).toBe(3)
   expect(TextDocument.getInvalidStartIndex(editorId)).toBe(4)
 })
+
+test('does not treat an empty inline style range as full-line embedded content', () => {
+  const editorId = 3
+  const line = '<style></style>'
+  TokenizerMap.set('html-empty-style-test', {
+    hasArrayReturn: true,
+    initialLineState: { state: 0 },
+    tokenizeLine() {
+      return {
+        embeddedLanguage: 'css-empty-style-test',
+        embeddedLanguageEnd: 7,
+        embeddedLanguageStart: 7,
+        state: 1,
+        tokens: [1, 7, 2, 8],
+      }
+    },
+  })
+  TokenizerMap.set('css-empty-style-test', {
+    hasArrayReturn: true,
+    initialLineState: { state: 0 },
+    TokenMap: {},
+    tokenizeLine() {
+      throw new Error('empty embedded content should not be tokenized')
+    },
+  })
+
+  const result = GetTokensViewport.getTokensViewport({ languageId: 'html-empty-style-test' }, 0, 1, true, editorId, [line])
+
+  expect(result.tokenizersToLoad).toEqual([])
+  expect(result.embeddedResults).toEqual([
+    {
+      isFull: false,
+      result: { tokens: [] },
+      TokenMap: [],
+    },
+  ])
+  expect(result.tokens[0].tokens).toEqual([1, 7, 2, 8])
+})
